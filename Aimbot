@@ -3,50 +3,26 @@ local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
--- Function to find the nearest player's head
-local function findNearestPlayer()
-    local closestDist = math.huge
-    local closestPlayer = nil
-    
-    for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-        if otherPlayer ~= player then
-            local otherCharacter = otherPlayer.Character
-            if otherCharacter then
-                local head = otherCharacter:FindFirstChild("Head")
-                if head then
-                    local dist = (head.Position - character.Head.Position).magnitude
-                    if dist < closestDist then
-                        closestDist = dist
-                        closestPlayer = otherPlayer
-                    end
-                end
-            end
-        end
-    end
-    
-    return closestPlayer
-end
-
--- Function to lock onto a player's head
-local function lockOnToHead(targetPlayer)
+-- Function to lock onto a player's torso
+local function lockOnToPlayer(targetPlayer)
     local targetCharacter = targetPlayer.Character
     if targetCharacter then
-        local targetHead = targetCharacter:FindFirstChild("Head")
-        if targetHead then
+        local targetTorso = targetCharacter:FindFirstChild("Torso") or targetCharacter:FindFirstChild("UpperTorso")
+        if targetTorso then
             local attachment = Instance.new("Attachment")
             attachment.CFrame = character.Head.CFrame
             attachment.Parent = character.Head
             
             local alignPosition = Instance.new("AlignPosition")
             alignPosition.Attachment0 = attachment
-            alignPosition.Attachment1 = targetHead
+            alignPosition.Attachment1 = targetTorso
             alignPosition.MaxForce = 5000
             alignPosition.Responsiveness = 200
             alignPosition.Parent = attachment
             
             local alignOrientation = Instance.new("AlignOrientation")
             alignOrientation.Attachment0 = attachment
-            alignOrientation.Attachment1 = targetHead
+            alignOrientation.Attachment1 = targetTorso
             alignOrientation.MaxTorque = 5000
             alignOrientation.Responsiveness = 200
             alignOrientation.Parent = attachment
@@ -62,9 +38,10 @@ end
 
 -- Main loop
 while true do
-    local nearestPlayer = findNearestPlayer()
-    if nearestPlayer then
-        lockOnToHead(nearestPlayer)
+    for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            lockOnToPlayer(otherPlayer)
+        end
     end
     wait(0.5) -- Check every half second
 end
