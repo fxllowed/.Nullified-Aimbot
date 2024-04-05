@@ -1,60 +1,37 @@
--- Function to create the border effect for a player
-local function createBorder(player)
-    -- Create a part to represent the border
-    local borderPart = Instance.new("Part")
-    borderPart.Size = Vector3.new(2, 4, 2) -- Adjust the size of the border to your preference
-    borderPart.Transparency = 1
-    borderPart.Color = Color3.fromRGB(139, 0, 0) -- Dark red color
-    borderPart.Anchored = true
-    borderPart.CanCollide = false
-    borderPart.Parent = workspace
-
-    -- Create a SurfaceGui for the border
-    local surfaceGui = Instance.new("SurfaceGui")
-    surfaceGui.Face = Enum.NormalId.Back
-    surfaceGui.Parent = borderPart
-
-    -- Create a frame inside the SurfaceGui to draw the border
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BorderSizePixel = 0
-    frame.BackgroundColor3 = Color3.fromRGB(139, 0, 0) -- Dark red color
-    frame.Parent = surfaceGui
-
-    -- Function to update the position of the border
-    local function updatePosition()
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            borderPart.Position = player.Character.HumanoidRootPart.Position
-        end
+local function setHighlight(player, enabled)
+  if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+    local character = player.Character
+    local outline = character:FindFirstChild("Outline")
+    if enabled then
+      if not outline then
+        outline = character:FindFirstChild("Humanoid:AddAccessory")("Outline")
+        outline.Enabled = true
+        outline.FillTransparency = 1
+        outline.StrokeColor = Color3.fromRGB(255, 0, 255) -- purple
+      end
+    else
+      if outline then
+        outline:Destroy()
+      end
     end
-
-    -- Connect the updatePosition function to the player's movements
-    player.CharacterAdded:Connect(function(character)
-        character.Humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(updatePosition)
-    end)
-
-    -- Connect the updatePosition function to the player's removal
-    player.CharacterRemoving:Connect(function()
-        borderPart:Destroy()
-    end)
-
-    -- Initially position the border
-    updatePosition()
+  end
 end
 
--- Function to create the border for all existing players
-local function createBordersForExistingPlayers()
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        createBorder(player)
-    end
-end
+local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
 
--- Connect the createBordersForExistingPlayers function to the PlayerAdded event
-game.Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-        createBorder(player)
-    end)
+userInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+  if not gameProcessedEvent then
+    local target = workspace:FindRayCast(script.Parent.Parent.Head:GetWorldPosition(), script.Parent.Parent.Head:GetLookVector(), 200, RaycastFilter.new())
+    if target and target.Hit and target.Instance.Humanoid then
+      local player = target.Instance.Parent:FindFirstChild("Player")
+      setHighlight(player, true)
+    else
+      setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
+    end
+  end
 end)
 
--- Create borders for existing players when the script starts
-createBordersForExistingPlayers()
+runService.Heartbeat:Connect(function()
+  setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
+end)
