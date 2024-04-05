@@ -1,0 +1,57 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Define the color of the highlight (purple in this case)
+local highlightColor = Color3.fromRGB(148, 0, 211) -- Purple color
+
+-- Create a RemoteEvent in ReplicatedStorage to signal the client to apply the highlight
+local applyHighlightEvent = Instance.new("RemoteEvent")
+applyHighlightEvent.Name = "ApplyHighlightEvent"
+applyHighlightEvent.Parent = ReplicatedStorage
+
+-- Function to apply the highlight to a player
+local function applyHighlight(player)
+    local character = player.Character
+    if character then
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local highlight = Instance.new("SelectionBox")
+                highlight.Parent = part
+                highlight.Adornee = part
+                highlight.Color3 = highlightColor
+                highlight.LineThickness = 0.05
+            end
+        end
+    end
+end
+
+-- Function to remove the highlight from a player
+local function removeHighlight(player)
+    local character = player.Character
+    if character then
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                for _, child in ipairs(part:GetChildren()) do
+                    if child:IsA("SelectionBox") then
+                        child:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Apply the highlight to all current players
+for _, player in ipairs(Players:GetPlayers()) do
+    applyHighlight(player)
+end
+
+-- Apply the highlight to new players when they join
+Players.PlayerAdded:Connect(function(player)
+    applyHighlight(player)
+end)
+
+-- Remove the highlight when a player leaves
+Players.PlayerRemoving:Connect(function(player)
+    removeHighlight(player)
+end)
