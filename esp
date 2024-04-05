@@ -1,13 +1,12 @@
--- Define the function to create the border effect
+-- Function to create the border effect for a player
 local function createBorder(player)
     -- Create a part to represent the border
     local borderPart = Instance.new("Part")
-    borderPart.Size = player.Character.HumanoidRootPart.Size * 1.1
+    borderPart.Size = Vector3.new(2, 4, 2) -- Adjust the size of the border to your preference
     borderPart.Transparency = 1
     borderPart.Color = Color3.fromRGB(139, 0, 0) -- Dark red color
     borderPart.Anchored = true
     borderPart.CanCollide = false
-    borderPart.Position = player.Character.HumanoidRootPart.Position
     borderPart.Parent = workspace
 
     -- Create a SurfaceGui for the border
@@ -22,40 +21,40 @@ local function createBorder(player)
     frame.BackgroundColor3 = Color3.fromRGB(139, 0, 0) -- Dark red color
     frame.Parent = surfaceGui
 
-    -- Set the part's SurfaceTransparency to 1 so it's visible through other parts
-    for _, surface in ipairs(Enum.NormalId:GetEnumItems()) do
-        borderPart:SetSurfaceTransparency(surface, 1)
-    end
-
-    -- Ensure the borderPart follows the player
+    -- Function to update the position of the border
     local function updatePosition()
-        borderPart.Position = player.Character.HumanoidRootPart.Position
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            borderPart.Position = player.Character.HumanoidRootPart.Position
+        end
     end
 
-    player.Character.HumanoidRootPart:GetPropertyChangedSignal("Position"):Connect(updatePosition)
+    -- Connect the updatePosition function to the player's movements
+    player.CharacterAdded:Connect(function(character)
+        character.Humanoid:GetPropertyChangedSignal("MoveDirection"):Connect(updatePosition)
+    end)
 
-    -- Clean up the border when the player leaves the game
+    -- Connect the updatePosition function to the player's removal
     player.CharacterRemoving:Connect(function()
         borderPart:Destroy()
     end)
+
+    -- Initially position the border
+    updatePosition()
 end
 
--- Call the function for each player when they spawn
+-- Function to create the border for all existing players
+local function createBordersForExistingPlayers()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        createBorder(player)
+    end
+end
+
+-- Connect the createBordersForExistingPlayers function to the PlayerAdded event
 game.Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function(character)
         createBorder(player)
     end)
-    if player.Character then
-        createBorder(player)
-    end
 end)
 
--- Call the function for existing players
-for _, player in ipairs(game.Players:GetPlayers()) do
-    player.CharacterAdded:Connect(function(character)
-        createBorder(player)
-    end)
-    if player.Character then
-        createBorder(player)
-    end
-end
+-- Create borders for existing players when the script starts
+createBordersForExistingPlayers()
