@@ -7,7 +7,7 @@ local function setHighlight(player, enabled)
         outline = character:FindFirstChild("Humanoid:AddAccessory")("Outline")
         outline.Enabled = true
         outline.FillTransparency = 1
-        outline.StrokeColor = Color3.fromRGB(255, 0, 255) -- purple
+        outline.StrokeColor = Color3.fromRGB(255, 255, 0) -- yellow
       end
     else
       if outline then
@@ -17,7 +17,6 @@ local function setHighlight(player, enabled)
   end
 end
 
-local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 
 userInputService.InputBegan:Connect(function(input, gameProcessedEvent)
@@ -30,8 +29,4 @@ userInputService.InputBegan:Connect(function(input, gameProcessedEvent)
       setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
     end
   end
-end)
-
-runService.Heartbeat:Connect(function()
-  setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
 end)
