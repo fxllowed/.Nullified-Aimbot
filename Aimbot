@@ -1,0 +1,49 @@
+-- Function to create a part that locks onto a player's head
+local function createLockOnPart(player)
+    -- Create a part to represent the lock-on indicator
+    local lockOnPart = Instance.new("Part")
+    lockOnPart.Size = Vector3.new(1, 1, 1)
+    lockOnPart.Shape = Enum.PartType.Ball
+    lockOnPart.Transparency = 0.5
+    lockOnPart.Color = Color3.new(0, 1, 0) -- Green color (you can change this)
+    lockOnPart.Anchored = true
+    lockOnPart.CanCollide = false
+    lockOnPart.Parent = workspace
+
+    -- Function to update the position of the lock-on part to follow the player's head
+    local function updatePosition()
+        if player.Character and player.Character:FindFirstChild("Head") then
+            lockOnPart.Position = player.Character.Head.Position + Vector3.new(0, 2, 0) -- Adjust the offset if needed
+        end
+    end
+
+    -- Connect the updatePosition function to the player's movements
+    player.CharacterAdded:Connect(function(character)
+        character:GetPropertyChangedSignal("Head"):Connect(updatePosition)
+    end)
+
+    -- Connect the updatePosition function to the player's removal
+    player.CharacterRemoving:Connect(function()
+        lockOnPart:Destroy()
+    end)
+
+    -- Initially position the lock-on part
+    updatePosition()
+end
+
+-- Function to create the lock-on parts for all existing players
+local function createLockOnPartsForExistingPlayers()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        createLockOnPart(player)
+    end
+end
+
+-- Connect the createLockOnPartsForExistingPlayers function to the PlayerAdded event
+game.Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        createLockOnPart(player)
+    end)
+end)
+
+-- Create lock-on parts for existing players when the script starts
+createLockOnPartsForExistingPlayers()
