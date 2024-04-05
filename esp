@@ -1,57 +1,37 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- Define the color of the highlight (purple in this case)
-local highlightColor = Color3.fromRGB(148, 0, 211) -- Purple color
-
--- Create a RemoteEvent in ReplicatedStorage to signal the client to apply the highlight
-local applyHighlightEvent = Instance.new("RemoteEvent")
-applyHighlightEvent.Name = "ApplyHighlightEvent"
-applyHighlightEvent.Parent = ReplicatedStorage
-
--- Function to apply the highlight to a player
-local function applyHighlight(player)
+local function setHighlight(player, enabled)
+  if player and player.Character and player.Character:FindFirstChild("Humanoid") then
     local character = player.Character
-    if character then
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                local highlight = Instance.new("SelectionBox")
-                highlight.Parent = part
-                highlight.Adornee = part
-                highlight.Color3 = highlightColor
-                highlight.LineThickness = 0.05
-            end
-        end
+    local outline = character:FindFirstChild("Outline")
+    if enabled then
+      if not outline then
+        outline = character:FindFirstChild("Humanoid:AddAccessory")("Outline")
+        outline.Enabled = true
+        outline.FillTransparency = 1
+        outline.StrokeColor = Color3.fromRGB(255, 192, 203) -- light pink
+      end
+    else
+      if outline then
+        outline:Destroy()
+      end
     end
+  end
 end
 
--- Function to remove the highlight from a player
-local function removeHighlight(player)
-    local character = player.Character
-    if character then
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                for _, child in ipairs(part:GetChildren()) do
-                    if child:IsA("SelectionBox") then
-                        child:Destroy()
-                    end
-                end
-            end
-        end
+local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
+
+userInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+  if not gameProcessedEvent then
+    local target = workspace:FindRayCast(script.Parent.Parent.Head:GetWorldPosition(), script.Parent.Parent.Head:GetLookVector(), 200, RaycastFilter.new())
+    if target and target.Hit and target.Instance.Humanoid then
+      local player = target.Instance.Parent:FindFirstChild("Player")
+      setHighlight(player, true)
+    else
+      setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
     end
-end
-
--- Apply the highlight to all current players
-for _, player in ipairs(Players:GetPlayers()) do
-    applyHighlight(player)
-end
-
--- Apply the highlight to new players when they join
-Players.PlayerAdded:Connect(function(player)
-    applyHighlight(player)
+  end
 end)
 
--- Remove the highlight when a player leaves
-Players.PlayerRemoving:Connect(function(player)
-    removeHighlight(player)
+runService.Heartbeat:Connect(function()
+  setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
 end)
