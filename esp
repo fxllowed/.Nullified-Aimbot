@@ -1,37 +1,48 @@
-local function setHighlight(player, enabled)
-  if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-    local character = player.Character
-    local outline = character:FindFirstChild("Outline")
-    if enabled then
-      if not outline then
-        outline = character:FindFirstChild("Humanoid:AddAccessory")("Outline")
-        outline.Enabled = true
-        outline.FillTransparency = 1
-        outline.StrokeColor = Color3.fromRGB(255, 192, 203) -- light pink
-      end
-    else
-      if outline then
-        outline:Destroy()
-      end
+local function createHighlight(player)
+    -- Create a part to cover the player
+    local highlightPart = Instance.new("Part")
+    highlightPart.Size = player.Character.HumanoidRootPart.Size * 1.1
+    highlightPart.Transparency = 0.5
+    highlightPart.Color = Color3.fromRGB(255, 105, 180) -- Pink color
+    highlightPart.Anchored = true
+    highlightPart.CanCollide = false
+    highlightPart.Position = player.Character.HumanoidRootPart.Position
+    highlightPart.Parent = workspace
+
+    -- Set the part's SurfaceTransparency to 1 so it's visible through other parts
+    for _, surface in ipairs(Enum.NormalId:GetEnumItems()) do
+        highlightPart:SetSurfaceTransparency(surface, 1)
     end
-  end
+
+    -- Ensure the highlightPart follows the player
+    local function updatePosition()
+        highlightPart.Position = player.Character.HumanoidRootPart.Position
+    end
+
+    player.Character.HumanoidRootPart:GetPropertyChangedSignal("Position"):Connect(updatePosition)
+
+    -- Clean up the highlight when the player leaves the game
+    player.CharacterRemoving:Connect(function()
+        highlightPart:Destroy()
+    end)
 end
 
-local runService = game:GetService("RunService")
-local userInputService = game:GetService("UserInputService")
-
-userInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-  if not gameProcessedEvent then
-    local target = workspace:FindRayCast(script.Parent.Parent.Head:GetWorldPosition(), script.Parent.Parent.Head:GetLookVector(), 200, RaycastFilter.new())
-    if target and target.Hit and target.Instance.Humanoid then
-      local player = target.Instance.Parent:FindFirstChild("Player")
-      setHighlight(player, true)
-    else
-      setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
+-- Call the function for each player when they spawn
+game.Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        createHighlight(player)
+    end)
+    if player.Character then
+        createHighlight(player)
     end
-  end
 end)
 
-runService.Heartbeat:Connect(function()
-  setHighlight(workspace.FindFirstChild("LocalPlayer"), false)
-end)
+-- Call the function for existing players
+for _, player in ipairs(game.Players:GetPlayers()) do
+    player.CharacterAdded:Connect(function(character)
+        createHighlight(player)
+    end)
+    if player.Character then
+        createHighlight(player)
+    end
+end
