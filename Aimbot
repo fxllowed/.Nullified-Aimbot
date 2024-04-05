@@ -1,42 +1,70 @@
--- Get the local player
+-- Get the current player's character
 local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
 
--- Function to find the closest player
-local function findClosestPlayer()
-    local minDist = math.huge
+-- Function to find the nearest player's head
+local function findNearestPlayer()
+    local closestDist = math.huge
     local closestPlayer = nil
-
-    -- Iterate through all players
+    
     for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-        -- Check if the player is not the local player
         if otherPlayer ~= player then
-            -- Calculate distance between local player and other player
-            local dist = (otherPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).magnitude
-
-            -- Update closest player if closer than previous closest
-            if dist < minDist then
-                minDist = dist
-                closestPlayer = otherPlayer
+            local otherCharacter = otherPlayer.Character
+            if otherCharacter then
+                local head = otherCharacter:FindFirstChild("Head")
+                if head then
+                    local dist = (head.Position - character.Head.Position).magnitude
+                    if dist < closestDist then
+                        closestDist = dist
+                        closestPlayer = otherPlayer
+                    end
+                end
             end
         end
     end
-
+    
     return closestPlayer
 end
 
--- Function to update camera
-local function updateCamera()
-    local closestPlayer = findClosestPlayer()
-    
-    if closestPlayer then
-        -- Set camera's CFrame to look at the closest player's character
-        local lookAtPosition = closestPlayer.Character.HumanoidRootPart.Position
-        local currentCameraCFrame = game.Workspace.CurrentCamera.CFrame
-        game.Workspace.CurrentCamera.CFrame = CFrame.new(currentCameraCFrame.Position, lookAtPosition)
+-- Function to lock onto a player's head
+local function lockOnToHead(targetPlayer)
+    local targetCharacter = targetPlayer.Character
+    if targetCharacter then
+        local targetHead = targetCharacter:FindFirstChild("Head")
+        if targetHead then
+            local attachment = Instance.new("Attachment")
+            attachment.CFrame = character.Head.CFrame
+            attachment.Parent = character.Head
+            
+            local alignPosition = Instance.new("AlignPosition")
+            alignPosition.Attachment0 = attachment
+            alignPosition.Attachment1 = targetHead
+            alignPosition.MaxForce = 5000
+            alignPosition.Responsiveness = 200
+            alignPosition.Parent = attachment
+            
+            local alignOrientation = Instance.new("AlignOrientation")
+            alignOrientation.Attachment0 = attachment
+            alignOrientation.Attachment1 = targetHead
+            alignOrientation.MaxTorque = 5000
+            alignOrientation.Responsiveness = 200
+            alignOrientation.Parent = attachment
+            
+            humanoid.Died:Connect(function()
+                attachment:Destroy()
+                alignPosition:Destroy()
+                alignOrientation:Destroy()
+            end)
+        end
     end
 end
 
--- Call updateCamera function periodically
-while wait(0.1) do
-    updateCamera()
+-- Main loop
+while true do
+    local nearestPlayer = findNearestPlayer()
+    if nearestPlayer then
+        lockOnToHead(nearestPlayer)
+    end
+    wait(0.5) -- Check every half second
 end
