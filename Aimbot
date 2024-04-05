@@ -3,45 +3,91 @@ local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
+-- Single Attachment and Alignments
+local attachment = Instance.new("Attachment")
+attachment.CFrame = character.Head.CFrame
+attachment.Parent = character.Head
+
+local alignPosition = Instance.new("AlignPosition")
+alignPosition.Attachment0 = attachment
+alignPosition.MaxForce = 5000
+alignPosition.Responsiveness = 200
+alignPosition.Parent = attachment
+
+local alignOrientation = Instance.new("AlignOrientation")
+alignOrientation.Attachment0 = attachment
+alignOrientation.MaxTorque = 5000
+alignOrientation.Responsiveness = 200
+alignOrientation.Parent = attachment
+
+-- Target Tracking
+local targetPlayer = nil
+local isLockedOn = false -- Flag to track lock-on state
+
 -- Function to lock onto a player's torso
 local function lockOnToPlayer(targetPlayer)
+  if targetPlayer then
     local targetCharacter = targetPlayer.Character
     if targetCharacter then
-        local targetTorso = targetCharacter:FindFirstChild("Torso") or targetCharacter:FindFirstChild("UpperTorso")
-        if targetTorso then
-            local attachment = Instance.new("Attachment")
-            attachment.CFrame = character.Head.CFrame
-            attachment.Parent = character.Head
-            
-            local alignPosition = Instance.new("AlignPosition")
-            alignPosition.Attachment0 = attachment
-            alignPosition.Attachment1 = targetTorso
-            alignPosition.MaxForce = 5000
-            alignPosition.Responsiveness = 200
-            alignPosition.Parent = attachment
-            
-            local alignOrientation = Instance.new("AlignOrientation")
-            alignOrientation.Attachment0 = attachment
-            alignOrientation.Attachment1 = targetTorso
-            alignOrientation.MaxTorque = 5000
-            alignOrientation.Responsiveness = 200
-            alignOrientation.Parent = attachment
-            
-            humanoid.Died:Connect(function()
-                attachment:Destroy()
-                alignPosition:Destroy()
-                alignOrientation:Destroy()
-            end)
-        end
+      local targetTorso = targetCharacter:FindFirstChild("Torso") or targetCharacter:FindFirstChild("UpperTorso")
+      if targetTorso then
+        alignPosition.Attachment1 = targetTorso
+        alignOrientation.Attachment1 = targetTorso
+      end
     end
+  end
+end
+
+-- Function to disable lock-on
+local function disableLockOn()
+  targetPlayer = nil
+  alignPosition.Attachment1 = nil
+  alignOrientation.Attachment1 = nil
 end
 
 -- Main loop
 while true do
-    for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
-        if otherPlayer ~= player then
-            lockOnToPlayer(otherPlayer)
-        end
+  -- Find the closest player (replace with your targeting logic)
+  local closestPlayer = nil
+  local closestDistance = math.huge
+
+  for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+    if otherPlayer ~= player then
+      local distance = (character.HumanoidRootPart.Position - otherPlayer.Character.HumanoidRootPart.Position).magnitude
+      if not closestPlayer or distance < closestDistance then
+        closestPlayer = otherPlayer
+        closestDistance = distance
+      end
     end
-    wait(0.5) -- Check every half second
+  end
+
+  -- Update target and lock on if needed and enabled
+  if isLockedOn and targetPlayer ~= closestPlayer then
+    targetPlayer = closestPlayer
+    lockOnToPlayer(targetPlayer)
+  end
+  wait(0.5) -- Check every half second
 end
+
+-- Toggle lock-on on "S" key press
+local keybind = script.Parent:WaitForChild("UserInputService")
+local S = keybind.KeyCode.S
+
+keybind.InputBegan:Connect(function(key)
+  if key == S then
+    isLockedOn = not isLockedOn
+    if isLockedOn then
+      lockOnToPlayer(closestPlayer) -- Lock on closest player initially
+    else
+      disableLockOn()
+    end
+  end
+end)
+
+-- Disable on death (reuse existing Died connection)
+humanoid.Died:Connect(function()
+  attachment:Destroy()
+  alignPosition:Destroy()
+  alignOrientation:Destroy()
+  isLockedOn = false -- Reset lock-on state on death
+end)
