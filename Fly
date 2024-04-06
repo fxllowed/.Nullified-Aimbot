@@ -1,36 +1,51 @@
--- Variable to track flight mode status
+-- Get services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+-- Local player and character
+local localPlayer = Players.LocalPlayer
+local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+
+-- Create a transparent holder for the GUI
+local guiHolder = Instance.new("Part")
+guiHolder.Name = "FlightGuiHolder"
+guiHolder.CanCollide = false
+guiHolder.Anchored = true
+guiHolder.Transparency = 1
+guiHolder.Parent = workspace
+
+-- Create a TextButton for the flight toggle
+local flightButton = Instance.new("TextButton")
+flightButton.Name = "FlightButton"
+flightButton.Text = "Fly (OFF)" -- Initial button text
+flightButton.BackgroundColor3 = Color3.fromRGB(150, 150, 150) -- Button color
+flightButton.BorderColor3 = Color3.fromRGB(0, 0, 0) -- Border color
+flightButton.Position = UDim2.new(0.5, -0.5, 0.5, -0.5) -- Center the button
+flightButton.Parent = guiHolder
+
+-- Variable to store flight state (true = flying, false = not flying)
 local isFlying = false
 
--- Function to handle flight mode toggle
-local function toggleFlightMode()
-    isFlying = not isFlying
+-- Function to handle flight toggle
+local function toggleFlight()
+  isFlying = not isFlying
+  flightButton.Text = (isFlying and "Fly (ON)" or "Fly (OFF)") -- Update button text based on state
+  
+  if isFlying then
+    character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+  else
+    character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+  end
+end
+
+-- Connect click event to the toggle function
+flightButton.MouseButton1Click:Connect(toggleFlight)
+
+-- Check for character jump key press (adjust as needed)
+UserInputService.InputBegan:Connect(function(input, g)
+  if input.KeyCode == Enum.KeyCode.Space and character then
     if isFlying then
-        game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Physics)
-    else
-        game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.GettingUp)
+      character.Humanoid:Jump() -- Perform a jump while flying
     end
-end
-
--- Function to create GUI
-local function createGUI()
-    -- Create main frame
-    local mainFrame = Instance.new("ScreenGui")
-    mainFrame.Name = "FlightGUI"
-    mainFrame.Parent = game.Players.LocalPlayer.PlayerGui
-    
-    -- Create flight button
-    local flightButton = Instance.new("TextButton")
-    flightButton.Name = "FlightButton"
-    flightButton.Text = "Toggle Flight"
-    flightButton.Size = UDim2.new(0, 100, 0, 50)
-    flightButton.Position = UDim2.new(0.5, -50, 0.5, -25)
-    flightButton.Parent = mainFrame
-    flightButton.MouseButton1Click:Connect(toggleFlightMode)
-end
-
--- Create GUI when the player's GUI loads
-game.Players.LocalPlayer.PlayerGui.ChildAdded:Connect(function(child)
-    if child.Name == "PlayerList" then
-        createGUI()
-    end
+  end
 end)
