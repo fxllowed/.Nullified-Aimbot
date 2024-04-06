@@ -1,0 +1,44 @@
+-- Function to create tracers for all players
+local function createTracers()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player.Character then
+            local tracer = Instance.new("Part")
+            tracer.Name = "Tracer"
+            tracer.Anchored = true
+            tracer.CanCollide = false
+            tracer.Transparency = 1
+            tracer.Size = Vector3.new(0.1, 0.1, (game.Workspace.CurrentCamera.CFrame.p - player.Character.Head.Position).magnitude)
+            tracer.CFrame = CFrame.new((game.Workspace.CurrentCamera.CFrame.p + player.Character.Head.Position) / 2, player.Character.Head.Position)
+            tracer.Parent = game.Workspace.CurrentCamera
+        end
+    end
+end
+
+-- Function to update tracers every frame
+local function updateTracers()
+    while true do
+        for _, tracer in ipairs(game.Workspace.CurrentCamera:GetChildren()) do
+            if tracer.Name == "Tracer" then
+                local player = game.Players:GetPlayerFromCharacter(tracer.Parent)
+                if player and player.Character then
+                    tracer.Size = Vector3.new(0.1, 0.1, (game.Workspace.CurrentCamera.CFrame.p - player.Character.Head.Position).magnitude)
+                    tracer.CFrame = CFrame.new((game.Workspace.CurrentCamera.CFrame.p + player.Character.Head.Position) / 2, player.Character.Head.Position)
+                else
+                    tracer:Destroy()
+                end
+            end
+        end
+        wait(0.1) -- Update frequency
+    end
+end
+
+-- Connect functions to events
+game.Players.PlayerAdded:Connect(createTracers)
+game.Workspace.CurrentCamera.ChildAdded:Connect(function(child)
+    if child:IsA("PlayerGui") then
+        createTracers()
+    end
+end)
+
+-- Start updating tracers
+coroutine.wrap(updateTracers)()
