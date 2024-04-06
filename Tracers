@@ -1,44 +1,58 @@
--- Function to create tracers for all players
-local function createTracers()
-    for _, player in ipairs(game.Players:GetPlayers()) do
-        if player.Character then
-            local tracer = Instance.new("Part")
-            tracer.Name = "Tracer"
-            tracer.Anchored = true
-            tracer.CanCollide = false
-            tracer.Transparency = 1
-            tracer.Size = Vector3.new(0.1, 0.1, (game.Workspace.CurrentCamera.CFrame.p - player.Character.Head.Position).magnitude)
-            tracer.CFrame = CFrame.new((game.Workspace.CurrentCamera.CFrame.p + player.Character.Head.Position) / 2, player.Character.Head.Position)
-            tracer.Parent = game.Workspace.CurrentCamera
-        end
-    end
+-- Get services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Local player and character
+local localPlayer = Players.LocalPlayer
+local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+
+-- Trail properties (adjust as needed)
+local trailLength = 10 -- Length of the trail
+local trailColor = BrickColor.new("Bright Red") -- Color of the trail
+local trailThickness = 0.2 -- Thickness of the trail
+
+-- Function to create a trail
+local function createTrail(origin, target)
+  local direction = (target.Position - origin).unit * 100 -- Adjust fire distance
+  local trail = Instance.new("Beam")
+  trail.Parent = workspace
+  trail.CFrame = CFrame.new(origin)
+  trail.Size = Vector3.new(trailLength, trailThickness, trailThickness)
+  trail.Color = trailColor
+  trail.Attachment0 = trail
+
+  -- Animate the trail to move in the direction
+  local tweenService = game:GetService("TweenService")
+  local moveTween = tweenService:Create(trail, TweenInfo.new(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.In))
+  moveTween.Vector3Property = "LocalPosition"
+  moveTween.End = origin + direction  
+  moveTween:Play()
+
+  -- Destroy the trail after a short duration
+  wait(0.2)
+  trail:Destroy()
 end
 
--- Function to update tracers every frame
-local function updateTracers()
-    while true do
-        for _, tracer in ipairs(game.Workspace.CurrentCamera:GetChildren()) do
-            if tracer.Name == "Tracer" then
-                local player = game.Players:GetPlayerFromCharacter(tracer.Parent)
-                if player and player.Character then
-                    tracer.Size = Vector3.new(0.1, 0.1, (game.Workspace.CurrentCamera.CFrame.p - player.Character.Head.Position).magnitude)
-                    tracer.CFrame = CFrame.new((game.Workspace.CurrentCamera.CFrame.p + player.Character.Head.Position) / 2, player.Character.Head.Position)
-                else
-                    tracer:Destroy()
-                end
-            end
+-- Main loop (check for targets every 0.1 seconds)
+RunService.Heartbeat:Connect(function()
+  if character then
+    -- Find closest player (replace with your targeting logic)
+    local closestPlayer = nil
+    local closestDistance = math.huge
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+      if otherPlayer ~= localPlayer then
+        local distance = (character.HumanoidRootPart.Position - otherPlayer.Character.HumanoidRootPart.Position).magnitude
+        if not closestPlayer or distance < closestDistance then
+          closestPlayer = otherPlayer
+          closestDistance = distance
         end
-        wait(0.1) -- Update frequency
+      end
     end
-end
-
--- Connect functions to events
-game.Players.PlayerAdded:Connect(createTracers)
-game.Workspace.CurrentCamera.ChildAdded:Connect(function(child)
-    if child:IsA("PlayerGui") then
-        createTracers()
+    
+    -- Create a trail if a target is found
+    if closestPlayer then
+      local origin = character.Head.LocalPoint + character.Head.LookVector * 0.5 -- Fire from slightly ahead of the head
+      createTrail(origin, closestPlayer.Character.Torso) -- Target torso (adjust target part if needed)
     end
+  end
 end)
-
--- Start updating tracers
-coroutine.wrap(updateTracers)()
