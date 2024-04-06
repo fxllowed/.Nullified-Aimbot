@@ -1,55 +1,24 @@
--- Get the current player's character
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-
--- Create a transparent red part for the border
-local borderPart = Instance.new("Part")
-borderPart.Name = "LockOnBorder"
-borderPart.CanCollide = false
-borderPart.Transparency = 0.7 -- Adjust transparency for desired visibility
-borderPart.Size = Vector3.new(2, 2, 2) -- Adjust size of the border
-borderPart.BrickColor = BrickColor.new("Bright Red") -- Set border color
-
--- Function to update the border's position and rotation
-local function updateBorder()
-  if character then
-    borderPart.CFrame = character.Head.CFrame * CFrame.new(Vector3.new(0, 0.5, 0)) -- Position slightly above head
-  end
-end
-
--- Update the border position in a loop
-task.loop(function()
-  updateBorder()
-  wait(0.1) -- Adjust update frequency as needed
-end)
-
--- Parent the border to a transparent holder part inside the character
-local holder = Instance.new("Part")
-holder.Name = "LockOnBorderHolder"
-holder.CanCollide = false
-holder.Anchored = true
-holder.Transparency = 1
-holder.Parent = character
-
-borderPart.Parent = holder
-
--- Raycasting for visibility behind solid parts
-local function isPartVisible(targetPart)
-  local rayOrigin = character.Head.Position
-  local rayDir = (targetPart.Position - rayOrigin).unit
-  local raycastResult = workspace:Raycast(rayOrigin, rayDir, math.huge, RaycastParams.FilterDescendants { character })
-  return not raycastResult or raycastResult.Instance == targetPart
-end
-
--- RenderStepped event to check visibility and adjust transparency
-character.Humanoid:Connectથ("RenderStepped", function()
-  for _, part in ipairs(workspace:GetChildren()) do
-    if part:IsA("Part") and part.CanCollide then
-      if isPartVisible(part) then
-        borderPart.Transparency = 0.7 -- Visible, set desired transparency
-      else
-        borderPart.Transparency = 1 -- Occluded, make fully transparent
-      end
+-- Function to highlight a player's character
+local function highlightPlayer(player)
+    if player.Character then
+        for _, part in ipairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local originalColor = part.Color
+                part.Color = Color3.fromRGB(255, 255, 0) -- Bright yellow color
+                -- Restore original color after a short delay
+                wait(5) -- Adjust this time as needed
+                part.Color = originalColor
+            end
+        end
     end
-  end
-end)
+end
+
+-- Function to highlight all players' characters
+local function highlightAllPlayers()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        highlightPlayer(player)
+    end
+end
+
+-- Connect function to an event that triggers the highlighting (e.g., when a player joins)
+game.Players.PlayerAdded:Connect(highlightAllPlayers)
